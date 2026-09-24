@@ -360,7 +360,19 @@ try { currentView = localStorage.getItem("dsa666-view") || "day"; } catch {}
 
 function normalizeSegment(seg) {
   seg = seg.replace(/\.[a-zA-Z0-9]+$/, "");
-  seg = seg.replace(/^\d+[-_. ]*/, "");
+  // Only strip a leading digit run if it's followed by an actual separator
+  // (day-ordering prefixes like "01-two-sum" or "03_two_sum") - a bare
+  // digit run glued straight to a letter ("3sum", "4sum-ii", "132-pattern")
+  // is part of the real slug and must not be touched.
+  seg = seg.replace(/^\d+[-_. ]+/, "");
+  // Split camelCase/PascalCase filenames into words before lowercasing, so
+  // "moveZeros.java", "TwoSum.py", "LRUCache.cpp" all normalize the same as
+  // their hyphenated equivalents. Acronym runs first ("LRUCache" -> "LRU-Cache"),
+  // then plain lower->upper boundaries ("move-Zeros", "Two-Sum"). Digits are
+  // deliberately excluded from the boundary so "3Sum" stays "3sum", matching
+  // LeetCode's own un-hyphenated "3sum" slug rather than becoming "3-sum".
+  seg = seg.replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2");
+  seg = seg.replace(/([a-z])([A-Z])/g, "$1-$2");
   seg = seg.toLowerCase().replace(/[_\s]+/g, "-").replace(/[^a-z0-9-]/g, "");
   seg = seg.replace(/-+/g, "-").replace(/^-|-$/g, "");
   return seg;
